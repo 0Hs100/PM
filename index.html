@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,17 +9,26 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @media print {
-            .no-print { display: none !important; }
-            body { background: white; }
-            .shadow-lg { box-shadow: none !important; }
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .shadow-lg {
+                box-shadow: none !important;
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-100 p-6 font-sans">
 
     <!-- Container Utama -->
     <div id="printableArea" class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden p-8">
-        
+
         <div class="border-b pb-4 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Laporan Maintenance & Checkup</h1>
             <p class="text-sm text-gray-500">Silakan isi data di bawah ini.</p>
@@ -28,11 +38,21 @@
             <!-- 1. Pilih Outlet -->
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Outlet</label>
-                <select id="outlet" class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-blue-500" required>
+                <select id="outlet"
+                    class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-blue-500" required>
                     <option value="">-- Pilih Outlet --</option>
-                    <option value="Outlet Jakarta Pusat">Outlet Jakarta Pusat</option>
-                    <option value="Outlet Bandung">Outlet Bandung</option>
-                    <option value="Outlet Surabaya">Outlet Surabaya</option>
+                    <option value="HS01|Pematangsiantar">HS01|Pematangsiantar</option>
+                    <option value="HS02|OCBC">HS02|OCBC</option>
+                    <option value="HS03|Marelan">HS03|Marelan</option>
+                    <option value="HS04|Berauwe">HS04|Berauwe</option>
+                    <option value="HS05|Langsa">HS05|Langsa</option>
+                    <option value="HS06|Masjid Raya Baiturahman">HS06|Masjid Raya Baiturahman</option>
+                    <option value="HS07|Lhokseumauwe">HS07|Lhokseumauwe</option>
+                    <option value="HS08|Beureuen">HS08|Beureuen</option>
+                    <option value="HS09|Johor">HS09|Johor</option>
+                    <option value="HS10|Hasanuddin">HS10|Hasanuddin</option>
+                    <option value="HS11|Glugur">HS11|Glugur</option>
+                    <option value="HS12|Halat">HS12|Halat</option>
                 </select>
             </div>
 
@@ -42,23 +62,24 @@
             </div>
 
             <!-- Tombol Tambah Kategori -->
-            <button type="button" onclick="addCategoryBlock()" class="no-print mt-4 w-full py-2 border-2 border-dashed border-gray-400 text-gray-500 hover:border-blue-500 hover:text-blue-500 rounded transition">
+            <button type="button" onclick="addCategoryBlock()"
+                class="no-print mt-4 w-full py-2 border-2 border-dashed border-gray-400 text-gray-500 hover:border-blue-500 hover:text-blue-500 rounded transition">
                 + Tambah Kategori Lain
             </button>
 
         </form>
     </div>
 
-    <!-- Tombol Aksi (Tidak tercetak) -->
+    <!-- Tombol Aksi (Tidak tercetak) - Urutan Diubah -->
     <div class="max-w-4xl mx-auto mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+        <button onclick="resetForm()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
+            Reset
+        </button>
         <button onclick="saveDraft()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
             Save Draft
         </button>
         <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
             Print
-        </button>
-        <button onclick="resetForm()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">
-            Reset
         </button>
         <button onclick="convertPDF()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
             Convert PDF
@@ -67,24 +88,25 @@
 
     <script>
         // KONFIGURASI: Masukkan URL Apps Script Anda di sini
-        const SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA'; 
+        const SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT_ANDA';
 
         let categoryCount = 0;
+        let taskCount = 0;
 
         // Inisialisasi: Tambah 1 blok kategori saat load
-        window.onload = function() {
+        window.onload = function () {
             addCategoryBlock();
         };
 
         function addCategoryBlock() {
             categoryCount++;
             const container = document.getElementById('categoriesContainer');
-            
+
             const blockHTML = `
             <div class="category-block bg-gray-50 p-4 rounded border border-gray-200 relative" id="cat-${categoryCount}">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-lg text-blue-800">Kategori #${categoryCount}</h3>
-                    ${categoryCount > 1 ? `<button type="button" onclick="removeCategory(${categoryCount})" class="text-red-500 text-sm hover:underline">Hapus</button>` : ''}
+                    ${categoryCount > 1 ? `<button type="button" onclick="removeCategory(${categoryCount})" class="text-red-500 text-sm hover:underline">Hapus Kategori</button>` : ''}
                 </div>
 
                 <div class="mb-4">
@@ -97,11 +119,16 @@
                     </select>
                 </div>
 
-                <!-- Dynamic Fields Container -->
-                <div class="dynamic-fields space-y-4"></div>
+                <!-- Container untuk Task Blocks -->
+                <div class="task-container space-y-4 mb-4"></div>
+
+                <!-- Tombol Tambah Task -->
+                <button type="button" onclick="addTaskBlock(${categoryCount})" class="no-print w-full py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded text-sm font-semibold transition">
+                    + Tambah Task
+                </button>
             </div>
             `;
-            
+
             container.insertAdjacentHTML('beforeend', blockHTML);
         }
 
@@ -109,14 +136,19 @@
             document.getElementById(`cat-${id}`).remove();
         }
 
-        function toggleFields(selectElement) {
+        function addTaskBlock(categoryId) {
+            taskCount++;
+            const categoryBlock = document.getElementById(`cat-${categoryId}`);
+            const taskContainer = categoryBlock.querySelector('.task-container');
+            const selectElement = categoryBlock.querySelector('.cat-select');
             const categoryValue = selectElement.value;
-            const parentBlock = selectElement.closest('.category-block');
-            const fieldsContainer = parentBlock.querySelector('.dynamic-fields');
-            
-            fieldsContainer.innerHTML = ''; // Reset fields
 
-            if (!categoryValue) return;
+            if (!categoryValue) {
+                alert("Pilih kategori terlebih dahulu!");
+                return;
+            }
+
+            const taskIndex = taskContainer.children.length + 1;
 
             let fieldsHTML = '';
 
@@ -124,55 +156,75 @@
             if (categoryValue === '1' || categoryValue === '2') {
                 // 1. Pergantian Part & 2. Maintenance Monthly
                 fieldsHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-1 md:col-span-2">
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Task / Deskripsi Pekerjaan</label>
-                            <textarea name="task" class="w-full border p-2 rounded" rows="2" required></textarea>
+                    <div class="task-block bg-white p-3 rounded border border-gray-300 relative">
+                        <div class="absolute top-2 right-2 no-print">
+                            ${taskIndex > 1 ? `<button type="button" onclick="this.closest('.task-block').remove()" class="text-red-500 text-xs hover:underline">Hapus</button>` : ''}
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Task #${taskIndex} / Deskripsi Pekerjaan</label>
+                            <textarea class="task-input w-full border p-2 rounded text-sm" rows="2" required></textarea>
                         </div>
                         
-                        <!-- Sebelum -->
-                        <div class="bg-white p-2 rounded border">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SEBELUM</label>
-                            <input type="file" name="imgBefore" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            <input type="time" name="timeBefore" class="mt-2 w-full border p-1 rounded text-sm">
-                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Sebelum -->
+                            <div class="bg-gray-50 p-2 rounded border">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SEBELUM</label>
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500">
+                                <input type="time" class="mt-1 w-full border p-1 rounded text-xs">
+                            </div>
 
-                        <!-- Sesudah -->
-                        <div class="bg-white p-2 rounded border">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SESUDAH</label>
-                            <input type="file" name="imgAfter" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
-                            <input type="time" name="timeAfter" class="mt-2 w-full border p-1 rounded text-sm">
+                            <!-- Sesudah -->
+                            <div class="bg-gray-50 p-2 rounded border">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SESUDAH</label>
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500">
+                                <input type="time" class="mt-1 w-full border p-1 rounded text-xs">
+                            </div>
                         </div>
                     </div>
                 `;
             } else if (categoryValue === '3') {
                 // 3. CheckUp Daily
                 fieldsHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="col-span-1 md:col-span-2">
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Task / Item Check</label>
-                            <textarea name="task" class="w-full border p-2 rounded" rows="2" required></textarea>
+                    <div class="task-block bg-white p-3 rounded border border-gray-300 relative">
+                        <div class="absolute top-2 right-2 no-print">
+                            ${taskIndex > 1 ? `<button type="button" onclick="this.closest('.task-block').remove()" class="text-red-500 text-xs hover:underline">Hapus</button>` : ''}
+                        </div>
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Task #${taskIndex} / Item Check</label>
+                            <textarea class="task-input w-full border p-2 rounded text-sm" rows="2" required></textarea>
                         </div>
                         
-                        <div class="bg-white p-2 rounded border col-span-1 md:col-span-2">
+                        <div class="bg-gray-50 p-2 rounded border">
                             <label class="block text-xs font-bold text-gray-500 mb-1">FOTO CHECK & TIMESTAMP</label>
                             <div class="flex gap-2">
-                                <input type="file" name="imgCheck" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
-                                <input type="time" name="timeCheck" class="border p-2 rounded w-32">
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500">
+                                <input type="time" class="border p-1 rounded w-28 text-xs">
                             </div>
                         </div>
                     </div>
                 `;
             }
 
-            fieldsContainer.innerHTML = fieldsHTML;
+            taskContainer.insertAdjacentHTML('beforeend', fieldsHTML);
+        }
+
+        function toggleFields(selectElement) {
+            const categoryBlock = selectElement.closest('.category-block');
+            const taskContainer = categoryBlock.querySelector('.task-container');
+
+            // Clear existing tasks when category changes
+            taskContainer.innerHTML = '';
+
+            // Auto add one task block
+            const categoryId = categoryBlock.id.split('-')[1];
+            addTaskBlock(categoryId);
         }
 
         // --- FUNGSI ACTION ---
 
         function collectData() {
             const outlet = document.getElementById('outlet').value;
-            if(!outlet) { alert("Pilih Outlet terlebih dahulu!"); return null; }
+            if (!outlet) { alert("Pilih Outlet terlebih dahulu!"); return null; }
 
             const blocks = document.querySelectorAll('.category-block');
             let entries = [];
@@ -180,30 +232,37 @@
             blocks.forEach(block => {
                 const select = block.querySelector('.cat-select');
                 const category = select.value;
-                if(!category) return; // Skip jika kategori belum dipilih
+                if (!category) return; // Skip jika kategori belum dipilih
 
-                const task = block.querySelector('[name="task"]').value;
-                if(!task) { alert("Isi Task pada salah satu kategori!"); throw new Error("Task kosong"); }
+                const categoryName = select.options[select.selectedIndex].text;
+                const taskBlocks = block.querySelectorAll('.task-block');
 
-                let entry = {
-                    category: select.options[select.selectedIndex].text,
-                    task: task
-                };
+                taskBlocks.forEach(taskBlock => {
+                    const task = taskBlock.querySelector('.task-input').value;
+                    if (!task) { alert("Isi Task pada salah satu kategori!"); throw new Error("Task kosong"); }
 
-                // Ambil data berdasarkan tipe kategori
-                if (category === '1' || category === '2') {
-                    entry.imgBefore = block.querySelector('[name="imgBefore"]').value ? "Ada Foto" : "-";
-                    entry.timeBefore = block.querySelector('[name="timeBefore"]').value || "-";
-                    entry.imgAfter = block.querySelector('[name="imgAfter"]').value ? "Ada Foto" : "-";
-                    entry.timeAfter = block.querySelector('[name="timeAfter"]').value || "-";
-                } else if (category === '3') {
-                    entry.imgCheck = block.querySelector('[name="imgCheck"]').value ? "Ada Foto" : "-";
-                    entry.timeCheck = block.querySelector('[name="timeCheck"]').value || "-";
-                }
-                entries.push(entry);
+                    let entry = {
+                        category: categoryName,
+                        task: task
+                    };
+
+                    const inputs = taskBlock.querySelectorAll('input');
+
+                    // Ambil data berdasarkan tipe kategori
+                    if (category === '1' || category === '2') {
+                        entry.imgBefore = inputs[0].value ? "Ada Foto" : "-";
+                        entry.timeBefore = inputs[1].value || "-";
+                        entry.imgAfter = inputs[2].value ? "Ada Foto" : "-";
+                        entry.timeAfter = inputs[3].value || "-";
+                    } else if (category === '3') {
+                        entry.imgCheck = inputs[0].value ? "Ada Foto" : "-";
+                        entry.timeCheck = inputs[1].value || "-";
+                    }
+                    entries.push(entry);
+                });
             });
 
-            if(entries.length === 0) { alert("Pilih minimal satu kategori dan isi task!"); return null; }
+            if (entries.length === 0) { alert("Pilih minimal satu kategori dan isi task!"); return null; }
 
             return { outlet, entries };
         }
@@ -221,39 +280,34 @@
                 method: 'POST',
                 body: JSON.stringify(data)
             })
-            .then(response => {
-                alert("Data berhasil disimpan ke Spreadsheet!");
-                // resetForm(); // Opsional: reset setelah simpan
-            })
-            .catch(error => {
-                console.error('Error!', error.message);
-                alert("Gagal menyimpan. Cek koneksi atau URL Script.");
-            })
-            .finally(() => {
-                btnSubmit.innerText = originalText;
-                btnSubmit.disabled = false;
-            });
+                .then(response => {
+                    alert("Data berhasil disimpan ke Spreadsheet!");
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    alert("Gagal menyimpan. Cek koneksi atau URL Script.");
+                })
+                .finally(() => {
+                    btnSubmit.innerText = originalText;
+                    btnSubmit.disabled = false;
+                });
         }
 
         function saveDraft() {
-            // Dalam konteks web statis tanpa database lokal, "Save Draft" 
-            // kita implementasikan dengan langsung mengirim ke Google Sheet 
-            // tapi menandainya sebagai draft (bisa dimodifikasi di Apps Script jika perlu)
-            // Atau cukup simpan ke LocalStorage browser
             const data = collectData();
-            if(data) {
+            if (data) {
                 localStorage.setItem('maintenanceDraft', JSON.stringify(data));
                 alert("Draft tersimpan di browser (Local Storage)!");
-                // Jika ingin langsung simpan ke sheet juga, panggil sendData()
-                sendData(); 
+                sendData();
             }
         }
 
         function resetForm() {
-            if(confirm("Apakah Anda yakin ingin mereset formulir?")) {
+            if (confirm("Apakah Anda yakin ingin mereset formulir?")) {
                 document.getElementById('mainForm').reset();
                 document.getElementById('categoriesContainer').innerHTML = '';
                 categoryCount = 0;
+                taskCount = 0;
                 addCategoryBlock();
                 localStorage.removeItem('maintenanceDraft');
             }
@@ -262,23 +316,24 @@
         function convertPDF() {
             const element = document.getElementById('printableArea');
             const now = new Date();
-            const filename = `Laporan_${now.toISOString().slice(0,19).replace(/:/g,"-")}.pdf`;
-            
+            const filename = `Laporan_${now.toISOString().slice(0, 19).replace(/:/g, "-")}.pdf`;
+
             const opt = {
-                margin:       0.5,
-                filename:     filename,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+                margin: 0.5,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            // Sembunyikan tombol hapus kategori sebelum print/pdf
+            // Sembunyikan tombol hapus & tambah sebelum print/pdf
             document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-            
+
             html2pdf().set(opt).from(element).save().then(() => {
-                 document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+                document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
             });
         }
     </script>
 </body>
+
 </html>
