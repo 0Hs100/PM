@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Maintenance & Checkup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .shadow-lg {
+                box-shadow: none !important;
+            }
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        .signature-box {
+            width: 150px;
+            height: 60px;
+            border: 1px dashed #999;
+            margin: 10px auto;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        .report-table th,
+        .report-table td {
+            border: 1px solid #000;
+            padding: 4px 3px;
+            text-align: left;
+        }
+
+        .report-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .report-footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #000;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .photo-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .photo-container {
+            min-height: 90px;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .history-item:hover {
+            background-color: #f0f9ff;
+            cursor: pointer;
+        }
+
+        .saved-badge {
+            background-color: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .disabled-btn {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 p-6 font-sans">
+
+    <!-- Form Input Section -->
+    <div id="formSection" class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden p-8 no-print">
+
+        <div class="border-b-2 border-gray-800 pb-4 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800" id="formTitle">Input Data Maintenance</h1>
+                    <p class="text-sm text-gray-500">Silakan lengkapi formulir di bawah ini</p>
+                </div>
+                <div class="flex gap-2">
+                    <span id="saveStatus" class="hidden saved-badge">✅ Tersimpan</span>
+                    <button onclick="showHistoryModal()"
+                        class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-sm">
+                        📋 Riwayat Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <form id="mainForm">
+            <!-- Info Outlet & Petugas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Outlet *</label>
+                    <select id="outlet"
+                        class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:border-blue-500"
+                        required onchange="updatePreview()">
+                        <option value="">-- Pilih Outlet --</option>
+                        <option value="HS01|Pematangsiantar">HS01|Pematangsiantar</option>
+                        <option value="HS02|OCBC">HS02|OCBC</option>
+                        <option value="HS03|Marelan">HS03|Marelan</option>
+                        <option value="HS04|Berauwe">HS04|Berauwe</option>
+                        <option value="HS05|Langsa">HS05|Langsa</option>
+                        <option value="HS06|Masjid Raya Baiturahman">HS06|Masjid Raya Baiturahman</option>
+                        <option value="HS07|Lhokseumauwe">HS07|Lhokseumauwe</option>
+                        <option value="HS08|Beureuen">HS08|Beureuen</option>
+                        <option value="HS09|Johor">HS09|Johor</option>
+                        <option value="HS10|Hasanuddin">HS10|Hasanuddin</option>
+                        <option value="HS11|Glugur">HS11|Glugur</option>
+                        <option value="HS12|Halat">HS12|Halat</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Nama Petugas *</label>
+                    <input type="text" id="petugas" class="w-full border border-gray-300 rounded p-2"
+                        placeholder="Nama lengkap petugas" required onchange="updatePreview()" disabled>
+                    <p class="text-xs text-gray-400 mt-1">* Tidak dapat diedit setelah load dari riwayat</p>
+                </div>
+            </div>
+
+            <!-- PIC Toko (Wajib) -->
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">PIC Toko *</label>
+                <input type="text" id="picToko" class="w-full border border-gray-300 rounded p-2"
+                    placeholder="Nama PIC Toko" required onchange="updatePreview()">
+            </div>
+
+            <!-- Area Dinamis untuk Kategori -->
+            <div id="categoriesContainer" class="space-y-6"></div>
+
+            <!-- Tombol Tambah Kategori -->
+            <button type="button" onclick="addCategoryBlock()"
+                class="mt-4 w-full py-2 border-2 border-dashed border-gray-400 text-gray-500 hover:border-blue-500 hover:text-blue-500 rounded transition">
+                + Tambah Kategori Lain
+            </button>
+        </form>
+    </div>
+
+    <!-- Report Preview Section (Print/PDF Only) -->
+    <div id="reportSection" class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden p-8 print-only"
+        style="display: none;">
+
+        <!-- Header Laporan -->
+        <div class="border-b-2 border-gray-800 pb-4 mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Laporan Maintenance</h1>
+                    <p class="text-xs text-gray-500" id="reportTransId">ID: -</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm font-semibold">Periode: <span id="reportPeriod">-</span></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                <div>
+                    <p><strong>Outlet:</strong> <span id="reportOutlet">-</span></p>
+                    <p><strong>Petugas:</strong> <span id="reportPetugas">-</span></p>
+                </div>
+                <div class="text-right">
+                    <p><strong>PIC Toko:</strong> <span id="reportPicToko">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabel Detail Pekerjaan -->
+        <div class="mb-8">
+            <h3 class="font-bold mb-2 text-sm">Detail Pekerjaan</h3>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 4%;">No</th>
+                        <th style="width: 22%;">Task</th>
+                        <th style="width: 8%;">Time Start</th>
+                        <th style="width: 8%;">Time End</th>
+                        <th style="width: 7%;">Durasi</th>
+                        <th style="width: 8%;">Status</th>
+                        <th style="width: 10%;">Foto Sebelum</th>
+                        <th style="width: 10%;">Foto Sesudah</th>
+                        <th style="width: 10%;">Paraf</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTableBody">
+                    <!-- Data akan diisi otomatis -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Tanda Tangan -->
+        <div class="flex justify-between" style="margin-top: 50px;">
+            <div class="text-center" style="width: 200px;">
+                <p class="font-bold mb-2">Petugas,</p>
+                <div class="signature-box"></div>
+                <p class="font-semibold text-sm" id="signPetugas">_________________</p>
+            </div>
+            <div class="text-center" style="width: 200px;" id="signPicContainer">
+                <p class="font-bold mb-2">PIC Toko,</p>
+                <div class="signature-box"></div>
+                <p class="font-semibold text-sm" id="signPicToko">_________________</p>
+            </div>
+        </div>
+
+        <!-- Footer dengan DateTime -->
+        <div class="report-footer">
+            <p>Dicetak pada: <span id="printDateTime">-</span></p>
+            <p class="text-xs mt-1">Document ID: <span id="docTransId">-</span></p>
+        </div>
+    </div>
+
+    <!-- Tombol Aksi -->
+    <div class="max-w-4xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+        <button onclick="resetForm()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded">
+            🔄 Reset
+        </button>
+        <button onclick="saveToSheets()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded"
+            id="saveBtn">
+            💾 Save ke Spreadsheet
+        </button>
+        <button onclick="showReportOptions()"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded disabled-btn"
+            id="generateBtn">
+            📄 Generate Report
+        </button>
+    </div>
+
+    <!-- Draft Queue Modal -->
+    <div id="draftModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 class="text-lg font-bold mb-4">📋 Antrian Draft (<span id="draftCount">0</span>/3)</h3>
+            <div id="draftList" class="space-y-2 mb-4 max-h-64 overflow-y-auto"></div>
+            <div class="flex gap-2">
+                <button onclick="saveNewDraft()"
+                    class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">
+                    Simpan Draft Baru
+                </button>
+                <button onclick="closeDraftModal()"
+                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Options Modal -->
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold mb-4 text-center">📄 Pilih Output Laporan</h3>
+            <div class="space-y-3">
+                <button onclick="generateReport('pdf')"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded">
+                    💾 Save PDF
+                </button>
+                <button onclick="generateReport('print')"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded">
+                    🖨️ Print
+                </button>
+                <button onclick="closeReportModal()"
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">📚 Riwayat Report</h3>
+                <button onclick="closeHistoryModal()"
+                    class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <input type="text" id="searchOutlet" placeholder="Cari Outlet..." class="border p-2 rounded text-sm"
+                    onkeyup="filterHistory()">
+                <input type="date" id="searchDate" class="border p-2 rounded text-sm" onchange="filterHistory()">
+                <button onclick="loadHistoryFromSheets()"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-sm">
+                    🔄 Refresh Data
+                </button>
+            </div>
+
+            <!-- History List -->
+            <div class="flex-1 overflow-y-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead class="bg-gray-100 sticky top-0">
+                        <tr>
+                            <th class="border p-2 text-left">Tanggal</th>
+                            <th class="border p-2 text-left">Outlet</th>
+                            <th class="border p-2 text-left">Petugas</th>
+                            <th class="border p-2 text-left">Task</th>
+                            <th class="border p-2 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyList">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500">
+                <p>💡 Klik "Edit" untuk memuat dan edit report (buat versi baru)</p>
+                <p>👁️ Klik "Lihat" untuk preview tanpa edit</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Toast -->
+    <div id="loadingToast" class="fixed top-4 right-4 px-6 py-3 rounded shadow-lg hidden z-50 text-white">
+        <span class="loading-spinner mr-2"></span>
+        <span id="loadingText">Menyimpan...</span>
+    </div>
+
+    <script>
+        // KONFIGURASI
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwz94A19Wj_vzmVuoSq8epLdn1NBqDjKvBV0-BYh_KbOew9vJPKfzIra04CX0hJWQVsXQ/exec';
+        const MAX_DRAFTS = 3;
+        const MAX_HISTORY = 10;
+
+        let categoryCount = 0;
+        let taskCount = 0;
+        let allHistoryData = [];
+        let isSaved = false;
+        let currentTransId = null;
+        let isEditMode = false;
+
+        window.onload = function () {
+            addCategoryBlock();
+            loadDraftQueue();
+            updatePreview();
+            checkSaveStatus();
+        };
+
+        function checkSaveStatus() {
+            const savedData = localStorage.getItem('currentFormData');
+            if (savedData) {
+                isSaved = true;
+                currentTransId = JSON.parse(savedData).transId;
+                document.getElementById('saveStatus').classList.remove('hidden');
+                document.getElementById('generateBtn').classList.remove('disabled-btn');
+            }
+        }
+
+        function updatePreview() {
+            const outlet = document.getElementById('outlet').value;
+            const petugas = document.getElementById('petugas').value;
+            const picToko = document.getElementById('picToko').value;
+
+            const now = new Date();
+            const period = now.toLocaleString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            document.getElementById('reportPeriod').textContent = period;
+            document.getElementById('reportOutlet').textContent = outlet || '-';
+            document.getElementById('reportPetugas').textContent = petugas || '-';
+            document.getElementById('reportPicToko').textContent = picToko || '-';
+            document.getElementById('signPetugas').textContent = petugas || '_________________';
+            document.getElementById('signPicToko').textContent = picToko || '_________________';
+        }
+
+        function addCategoryBlock() {
+            categoryCount++;
+            const container = document.getElementById('categoriesContainer');
+
+            const blockHTML = `
+            <div class="category-block bg-gray-50 p-4 rounded border border-gray-200 relative" id="cat-${categoryCount}">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-blue-800">Kategori #${categoryCount}</h3>
+                    ${categoryCount > 1 ? `<button type="button" onclick="removeCategory(${categoryCount})" class="text-red-500 text-sm hover:underline">Hapus Kategori</button>` : ''}
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Kategori *</label>
+                    <select onchange="toggleFields(this)" class="cat-select w-full border border-gray-300 rounded p-2 bg-white" required>
+                        <option value="">-- Pilih Kategori --</option>
+                        <option value="1">1. Pergantian Part</option>
+                        <option value="2">2. Maintenance Monthly</option>
+                        <option value="3">3. CheckUp Daily</option>
+                    </select>
+                </div>
+
+                <div class="task-container space-y-4 mb-4"></div>
+
+                <button type="button" onclick="addTaskBlock(${categoryCount})" class="w-full py-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded text-sm font-semibold transition">
+                    + Tambah Task
+                </button>
+            </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', blockHTML);
+        }
+
+        function removeCategory(id) {
+            document.getElementById(`cat-${id}`).remove();
+        }
+
+        function addTaskBlock(categoryId, savedData = null) {
+            taskCount++;
+            const categoryBlock = document.getElementById(`cat-${categoryId}`);
+            const taskContainer = categoryBlock.querySelector('.task-container');
+            const selectElement = categoryBlock.querySelector('.cat-select');
+            const categoryValue = selectElement.value;
+
+            if (!categoryValue && !savedData) {
+                alert("Pilih kategori terlebih dahulu!");
+                return;
+            }
+
+            const useCategoryValue = savedData ? savedData.categoryValue : categoryValue;
+            const taskIndex = taskContainer.children.length + 1;
+            const now = new Date();
+            const currentTime = now.toTimeString().slice(0, 5);
+
+            const timeBefore = savedData?.timeBefore || currentTime;
+            const timeAfter = savedData?.timeAfter || currentTime;
+            const timeCheck = savedData?.timeCheck || currentTime;
+            const status = savedData?.status || '';
+            const taskText = savedData?.task || '';
+            const photoBeforePreview = savedData?.photoBeforePreview || '';
+            const photoAfterPreview = savedData?.photoAfterPreview || '';
+            const photoCheckPreview = savedData?.photoCheckPreview || '';
+
+            let fieldsHTML = '';
+
+            if (useCategoryValue === '1' || useCategoryValue === '2') {
+                fieldsHTML = `
+                    <div class="task-block bg-white p-3 rounded border border-gray-300 relative" data-category-value="${useCategoryValue}">
+                        <div class="absolute top-2 right-2">
+                            ${taskIndex > 1 ? `<button type="button" onclick="this.closest('.task-block').remove()" class="text-red-500 text-xs hover:underline">Hapus</button>` : ''}
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Task #${taskIndex} / Deskripsi Pekerjaan *</label>
+                            <textarea class="task-input w-full border p-2 rounded text-sm" rows="2" required>${taskText}</textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                            <div class="bg-gray-50 p-2 rounded border">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SEBELUM</label>
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500 photo-before" onchange="handlePhotoPreview(this, 'before')">
+                                <input type="time" class="mt-1 w-full border p-1 rounded text-xs time-before" value="${timeBefore}" required>
+                                <div class="photo-container">
+                                    ${photoBeforePreview ? `<img src="${photoBeforePreview}" class="photo-preview" alt="Preview">` : '<p class="text-xs text-gray-400 mt-1">⏱️ Waktu otomatis saat foto dipilih</p>'}
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 p-2 rounded border">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">FOTO SESUDAH</label>
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500 photo-after" onchange="handlePhotoPreview(this, 'after')">
+                                <input type="time" class="mt-1 w-full border p-1 rounded text-xs time-after" value="${timeAfter}" required>
+                                <div class="photo-container">
+                                    ${photoAfterPreview ? `<img src="${photoAfterPreview}" class="photo-preview" alt="Preview">` : '<p class="text-xs text-gray-400 mt-1">⏱️ Waktu otomatis saat foto dipilih</p>'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Status Pekerjaan *</label>
+                            <select class="status-select w-full border p-2 rounded text-sm" required onchange="checkStatusCancel(this)">
+                                <option value="">-- Pilih Status --</option>
+                                <option value="Done" ${status === 'Done' ? 'selected' : ''}>✅ Done</option>
+                                <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>⏳ Pending</option>
+                                <option value="Cancel" ${status === 'Cancel' ? 'selected' : ''}>❌ Cancel</option>
+                            </select>
+                        </div>
+                        
+                        <div class="cancel-reason ${status === 'Cancel' ? '' : 'hidden'}">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Alasan Cancel *</label>
+                            <textarea class="w-full border p-2 rounded text-sm border-red-300" rows="2" placeholder="Jelaskan alasan pembatalan...">${savedData?.cancelReason || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+            } else if (useCategoryValue === '3') {
+                fieldsHTML = `
+                    <div class="task-block bg-white p-3 rounded border border-gray-300 relative" data-category-value="${useCategoryValue}">
+                        <div class="absolute top-2 right-2">
+                            ${taskIndex > 1 ? `<button type="button" onclick="this.closest('.task-block').remove()" class="text-red-500 text-xs hover:underline">Hapus</button>` : ''}
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Task #${taskIndex} / Item Check *</label>
+                            <textarea class="task-input w-full border p-2 rounded text-sm" rows="2" required>${taskText}</textarea>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-2 rounded border mb-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">FOTO CHECK & TIMESTAMP</label>
+                            <div class="flex gap-2">
+                                <input type="file" accept="image/*" class="w-full text-xs text-gray-500 photo-check" onchange="handlePhotoPreview(this, 'check')">
+                                <input type="time" class="border p-1 rounded w-28 text-xs time-check" value="${timeCheck}" required>
+                            </div>
+                            <div class="photo-container">
+                                ${photoCheckPreview ? `<img src="${photoCheckPreview}" class="photo-preview" alt="Preview">` : '<p class="text-xs text-gray-400 mt-1">⏱️ Waktu otomatis saat foto dipilih</p>'}
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Status Pekerjaan *</label>
+                            <select class="status-select w-full border p-2 rounded text-sm" required onchange="checkStatusCancel(this)">
+                                <option value="">-- Pilih Status --</option>
+                                <option value="Done" ${status === 'Done' ? 'selected' : ''}>✅ Done</option>
+                                <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>⏳ Pending</option>
+                                <option value="Cancel" ${status === 'Cancel' ? 'selected' : ''}>❌ Cancel</option>
+                            </select>
+                        </div>
+                        
+                        <div class="cancel-reason ${status === 'Cancel' ? '' : 'hidden'}">
+                            <label class="block text-gray-700 text-xs font-bold mb-1">Alasan Cancel *</label>
+                            <textarea class="w-full border p-2 rounded text-sm border-red-300" rows="2" placeholder="Jelaskan alasan pembatalan...">${savedData?.cancelReason || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+            }
+
+            taskContainer.insertAdjacentHTML('beforeend', fieldsHTML);
+        }
+
+        function handlePhotoPreview(input, type) {
+            if (input.files && input.files[0]) {
+                const now = new Date();
+                const timeString = now.toTimeString().slice(0, 5);
+                const taskBlock = input.closest('.task-block');
+
+                if (type === 'before') {
+                    taskBlock.querySelector('.time-before').value = timeString;
+                } else if (type === 'after') {
+                    taskBlock.querySelector('.time-after').value = timeString;
+                } else if (type === 'check') {
+                    taskBlock.querySelector('.time-check').value = timeString;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const container = input.parentElement.querySelector('.photo-container');
+                    container.innerHTML = `<img src="${e.target.result}" class="photo-preview" alt="Preview">`;
+
+                    // Mark form as unsaved when photo changes
+                    if (isSaved) {
+                        isSaved = false;
+                        document.getElementById('saveStatus').classList.add('hidden');
+                        document.getElementById('generateBtn').classList.add('disabled-btn');
+                        localStorage.removeItem('currentFormData');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function checkStatusCancel(selectElement) {
+            const taskBlock = selectElement.closest('.task-block');
+            const reasonDiv = taskBlock.querySelector('.cancel-reason');
+
+            if (selectElement.value === 'Cancel') {
+                reasonDiv.classList.remove('hidden');
+                reasonDiv.querySelector('textarea').required = true;
+            } else {
+                reasonDiv.classList.add('hidden');
+                reasonDiv.querySelector('textarea').required = false;
+            }
+        }
+
+        function toggleFields(selectElement) {
+            const categoryBlock = selectElement.closest('.category-block');
+            const taskContainer = categoryBlock.querySelector('.task-container');
+            taskContainer.innerHTML = '';
+
+            const categoryId = categoryBlock.id.split('-')[1];
+            addTaskBlock(categoryId);
+        }
+
+        // --- SAVE TO SHEETS ---
+
+        function saveToSheets() {
+            const data = collectData();
+            if (!data) return;
+
+            // Validate PIC Toko
+            if (!data.picToko || data.picToko.trim() === '') {
+                alert('PIC Toko wajib diisi!');
+                document.getElementById('picToko').focus();
+                return;
+            }
+
+            const btn = document.getElementById('saveBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading-spinner"></span> Menyimpan...';
+
+            // Generate or keep Transaction ID
+            if (!currentTransId || isEditMode) {
+                currentTransId = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
+                if (isEditMode) {
+                    data.revision = 2; // Mark as revision
+                }
+            }
+            data.transId = currentTransId;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.result === 'success') {
+                        isSaved = true;
+                        document.getElementById('saveStatus').classList.remove('hidden');
+                        document.getElementById('generateBtn').classList.remove('disabled-btn');
+
+                        // Save to localStorage for quick access
+                        localStorage.setItem('currentFormData', JSON.stringify({
+                            transId: currentTransId,
+                            savedAt: new Date().toISOString()
+                        }));
+
+                        // Save to history
+                        saveToHistory(data);
+
+                        showToast('✅ Data berhasil disimpan ke Spreadsheet!', 'success');
+                    } else {
+                        showToast('❌ Gagal menyimpan data', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    showToast('❌ Error koneksi', 'error');
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+        }
+
+        // --- DRAFT QUEUE MANAGEMENT ---
+
+        function getDraftQueue() {
+            const drafts = localStorage.getItem('maintenanceDrafts');
+            return drafts ? JSON.parse(drafts) : [];
+        }
+
+        function saveDraftQueue(drafts) {
+            localStorage.setItem('maintenanceDrafts', JSON.stringify(drafts));
+        }
+
+        function loadDraftQueue() {
+            const drafts = getDraftQueue();
+            updateDraftButton(drafts.length);
+        }
+
+        function updateDraftButton(count) {
+            const btn = document.getElementById('draftBtn');
+            if (count > 0) {
+                btn.innerHTML = `📋 Lihat Draft (${count}/${MAX_DRAFTS})`;
+                btn.classList.remove('bg-yellow-500');
+                btn.classList.add('bg-orange-500');
+            } else {
+                btn.innerHTML = '💾 Save Draft';
+                btn.classList.add('bg-yellow-500');
+                btn.classList.remove('bg-orange-500');
+            }
+        }
+
+        function toggleDraftQueue() {
+            const drafts = getDraftQueue();
+            if (drafts.length === 0) {
+                saveNewDraft();
+                return;
+            }
+
+            const modal = document.getElementById('draftModal');
+            const list = document.getElementById('draftList');
+            document.getElementById('draftCount').textContent = drafts.length;
+
+            list.innerHTML = drafts.map((draft, index) => `
+                <div class="border p-3 rounded flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold">${draft.outlet}</p>
+                        <p class="text-xs text-gray-500">${draft.date} | ${draft.taskCount} Task</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loadDraft(${index})" class="text-blue-500 text-sm hover:underline">Load</button>
+                        <button onclick="deleteDraft(${index})" class="text-red-500 text-sm hover:underline">Hapus</button>
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDraftModal() {
+            const modal = document.getElementById('draftModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function collectDraftData() {
+            const outlet = document.getElementById('outlet').value;
+            const petugas = document.getElementById('petugas').value;
+            const picToko = document.getElementById('picToko').value;
+
+            if (!outlet || !petugas) {
+                alert("Outlet dan Nama Petugas wajib diisi!");
+                return null;
+            }
+
+            const blocks = document.querySelectorAll('.category-block');
+            let categories = [];
+
+            blocks.forEach(block => {
+                const select = block.querySelector('.cat-select');
+                const category = select.value;
+                if (!category) return;
+
+                const categoryName = select.options[select.selectedIndex].text;
+                const taskBlocks = block.querySelectorAll('.task-block');
+                let tasks = [];
+
+                taskBlocks.forEach(taskBlock => {
+                    const task = taskBlock.querySelector('.task-input').value;
+                    const status = taskBlock.querySelector('.status-select').value;
+
+                    let taskData = {
+                        task: task,
+                        status: status,
+                        categoryValue: category
+                    };
+
+                    if (category === '1' || category === '2') {
+                        taskData.timeBefore = taskBlock.querySelector('.time-before').value;
+                        taskData.timeAfter = taskBlock.querySelector('.time-after').value;
+                        taskData.cancelReason = taskBlock.querySelector('.cancel-reason textarea')?.value || '';
+
+                        const beforeImg = taskBlock.querySelector('.photo-before').parentElement.querySelector('.photo-preview');
+                        const afterImg = taskBlock.querySelector('.photo-after').parentElement.querySelector('.photo-preview');
+                        taskData.photoBeforePreview = beforeImg ? beforeImg.src : '';
+                        taskData.photoAfterPreview = afterImg ? afterImg.src : '';
+                    } else if (category === '3') {
+                        taskData.timeCheck = taskBlock.querySelector('.time-check').value;
+                        taskData.cancelReason = taskBlock.querySelector('.cancel-reason textarea')?.value || '';
+
+                        const checkImg = taskBlock.querySelector('.photo-check').parentElement.querySelector('.photo-preview');
+                        taskData.photoCheckPreview = checkImg ? checkImg.src : '';
+                    }
+
+                    tasks.push(taskData);
+                });
+
+                categories.push({
+                    categoryName: categoryName,
+                    categoryValue: category,
+                    tasks: tasks
+                });
+            });
+
+            return {
+                outlet,
+                petugas,
+                picToko,
+                categories,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function saveNewDraft() {
+            const data = collectDraftData();
+            if (!data) return;
+
+            const drafts = getDraftQueue();
+            if (drafts.length >= MAX_DRAFTS) {
+                alert(`Maksimal ${MAX_DRAFTS} draft! Hapus draft lama terlebih dahulu.`);
+                closeDraftModal();
+                return;
+            }
+
+            const draft = {
+                ...data,
+                id: Date.now(),
+                date: new Date().toLocaleString('id-ID'),
+                taskCount: data.categories.reduce((sum, cat) => sum + cat.tasks.length, 0)
+            };
+
+            drafts.push(draft);
+            saveDraftQueue(drafts);
+            updateDraftButton(drafts.length);
+            closeDraftModal();
+            alert("Draft berhasil disimpan!");
+        }
+
+        function loadDraft(index) {
+            const drafts = getDraftQueue();
+            const draft = drafts[index];
+
+            document.getElementById('mainForm').reset();
+            document.getElementById('categoriesContainer').innerHTML = '';
+            categoryCount = 0;
+            taskCount = 0;
+            isEditMode = false;
+
+            document.getElementById('outlet').value = draft.outlet;
+            document.getElementById('petugas').value = draft.petugas;
+            document.getElementById('petugas').disabled = false;
+            document.getElementById('picToko').value = draft.picToko || '';
+
+            draft.categories.forEach(cat => {
+                addCategoryBlock();
+                const lastCat = document.querySelector('.category-block:last-child');
+                const select = lastCat.querySelector('.cat-select');
+                select.value = cat.categoryValue;
+
+                toggleFields(select);
+
+                const taskContainer = lastCat.querySelector('.task-container');
+                taskContainer.innerHTML = '';
+
+                cat.tasks.forEach((taskData, taskIndex) => {
+                    taskCount++;
+                    const categoryId = lastCat.id.split('-')[1];
+                    addTaskBlock(categoryId, taskData);
+                });
+            });
+
+            updatePreview();
+            closeDraftModal();
+
+            // Reset save status
+            isSaved = false;
+            document.getElementById('saveStatus').classList.add('hidden');
+            document.getElementById('generateBtn').classList.add('disabled-btn');
+            localStorage.removeItem('currentFormData');
+
+            alert("Draft berhasil dimuat!");
+        }
+
+        function deleteDraft(index) {
+            const drafts = getDraftQueue();
+            drafts.splice(index, 1);
+            saveDraftQueue(drafts);
+            updateDraftButton(drafts.length);
+            toggleDraftQueue();
+        }
+
+        // --- REPORT HISTORY MANAGEMENT ---
+
+        function loadReportHistory() {
+            const history = localStorage.getItem('maintenanceHistory');
+            allHistoryData = history ? JSON.parse(history) : [];
+            renderHistoryList(allHistoryData);
+        }
+
+        function saveToHistory(data) {
+            const historyItem = {
+                id: data.transId,
+                timestamp: data.timestamp,
+                outlet: data.outlet,
+                petugas: data.petugas,
+                picToko: data.picToko,
+                entries: data.entries,
+                date: new Date().toLocaleString('id-ID'),
+                revision: data.revision || 1
+            };
+
+            let history = localStorage.getItem('maintenanceHistory');
+            let historyData = history ? JSON.parse(history) : [];
+
+            historyItem.isRevision = data.revision > 1;
+            historyData.unshift(historyItem);
+
+            if (historyData.length > MAX_HISTORY) {
+                historyData = historyData.slice(0, MAX_HISTORY);
+            }
+
+            localStorage.setItem('maintenanceHistory', JSON.stringify(historyData));
+            allHistoryData = historyData;
+        }
+
+        function renderHistoryList(data) {
+            const tbody = document.getElementById('historyList');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="border p-4 text-center text-gray-500">Belum ada riwayat report</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const taskCount = item.entries ? item.entries.length : 0;
+                const doneCount = item.entries ? item.entries.filter(e => e.status === 'Done').length : 0;
+                const revisionBadge = item.revision > 1 ? '<span class="text-xs bg-yellow-200 px-2 py-1 rounded">Rev.' + item.revision + '</span>' : '';
+
+                return `
+                <tr class="history-item">
+                    <td class="border p-2">${item.date} ${revisionBadge}</td>
+                    <td class="border p-2">${item.outlet}</td>
+                    <td class="border p-2">${item.petugas}</td>
+                    <td class="border p-2">${taskCount} Task (${doneCount} Done)</td>
+                    <td class="border p-2 text-center">
+                        <button onclick="viewHistoryReport('${item.id}')" class="bg-gray-600 hover:bg-gray-700 text-white text-xs font-bold py-1 px-3 rounded mr-1">
+                            👁️ Lihat
+                        </button>
+                        <button onclick="editHistoryReport('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded">
+                            ✏️ Edit
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function filterHistory() {
+            const searchOutlet = document.getElementById('searchOutlet').value.toLowerCase();
+            const searchDate = document.getElementById('searchDate').value;
+
+            let filtered = allHistoryData;
+
+            if (searchOutlet) {
+                filtered = filtered.filter(item => item.outlet.toLowerCase().includes(searchOutlet));
+            }
+
+            if (searchDate) {
+                filtered = filtered.filter(item => item.date.includes(searchDate));
+            }
+
+            renderHistoryList(filtered);
+        }
+
+        function loadHistoryFromSheets() {
+            showToast('🔄 Mengambil data dari Google Sheets...', 'info');
+
+            fetch(SCRIPT_URL)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.result === 'success') {
+                        showToast('✅ Data refreshed dari Sheets', 'success');
+                        // Process and display data
+                    }
+                })
+                .catch(error => {
+                    showToast('❌ Gagal mengambil data', 'error');
+                });
+        }
+
+        function viewHistoryReport(transId) {
+            const history = localStorage.getItem('maintenanceHistory');
+            const historyData = history ? JSON.parse(history) : [];
+            const report = historyData.find(item => item.id === transId);
+
+            if (!report) {
+                alert('Report tidak ditemukan!');
+                return;
+            }
+
+            // Load in read-only mode (similar to edit but without saving capability)
+            loadReportToForm(report, false);
+            closeHistoryModal();
+        }
+
+        function editHistoryReport(transId) {
+            const history = localStorage.getItem('maintenanceHistory');
+            const historyData = history ? JSON.parse(history) : [];
+            const report = historyData.find(item => item.id === transId);
+
+            if (!report) {
+                alert('Report tidak ditemukan!');
+                return;
+            }
+
+            // Load in edit mode (creates new version)
+            loadReportToForm(report, true);
+            closeHistoryModal();
+
+            showToast('📝 Mode Edit Aktif - Akan membuat versi baru', 'info');
+        }
+
+        function loadReportToForm(report, isEdit) {
+            // Reset form
+            document.getElementById('mainForm').reset();
+            document.getElementById('categoriesContainer').innerHTML = '';
+            categoryCount = 0;
+            taskCount = 0;
+
+            // Set title
+            if (isEdit) {
+                document.getElementById('formTitle').textContent = 'Edit Data Maintenance';
+                isEditMode = true;
+            } else {
+                document.getElementById('formTitle').textContent = 'Input Data Maintenance';
+                isEditMode = false;
+            }
+
+            // Load header info
+            document.getElementById('outlet').value = report.outlet;
+            document.getElementById('petugas').value = report.petugas;
+            document.getElementById('petugas').disabled = true; // Cannot edit petugas
+            document.getElementById('picToko').value = report.picToko || '';
+
+            // Group entries by category
+            const categories = {};
+            report.entries.forEach(entry => {
+                if (!categories[entry.category]) {
+                    categories[entry.category] = [];
+                }
+                categories[entry.category].push(entry);
+            });
+
+            // Rebuild form
+            Object.keys(categories).forEach(catName => {
+                addCategoryBlock();
+                const lastCat = document.querySelector('.category-block:last-child');
+                const select = lastCat.querySelector('.cat-select');
+
+                const catValue = catName.includes('Pergantian Part') ? '1' :
+                    catName.includes('Maintenance Monthly') ? '2' : '3';
+                select.value = catValue;
+
+                toggleFields(select);
+
+                const taskContainer = lastCat.querySelector('.task-container');
+                taskContainer.innerHTML = '';
+
+                categories[catName].forEach((entry, idx) => {
+                    taskCount++;
+                    const categoryId = lastCat.id.split('-')[1];
+                    addTaskBlock(categoryId, {
+                        task: entry.task,
+                        status: entry.status,
+                        categoryValue: catValue,
+                        timeBefore: entry.timeStart,
+                        timeAfter: entry.timeEnd,
+                        timeCheck: entry.timeStart
+                    });
+                });
+            });
+
+            updatePreview();
+
+            // Reset save status
+            isSaved = false;
+            currentTransId = isEdit ? null : report.id;
+            document.getElementById('saveStatus').classList.add('hidden');
+            document.getElementById('generateBtn').classList.add('disabled-btn');
+            localStorage.removeItem('currentFormData');
+        }
+
+        function showHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            loadReportHistory();
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // --- REPORT GENERATION ---
+
+        function showReportOptions() {
+            if (!isSaved) {
+                alert('⚠️ Anda harus Save ke Spreadsheet terlebih dahulu sebelum Generate Report!');
+                return;
+            }
+
+            const data = collectData();
+            if (!data) return;
+
+            populateReportTable(data);
+
+            const modal = document.getElementById('reportModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeReportModal() {
+            const modal = document.getElementById('reportModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function calculateDuration(timeStart, timeEnd) {
+            if (!timeStart || !timeEnd || timeStart === '-' || timeEnd === '-') {
+                return '-';
+            }
+
+            const start = new Date(`2000-01-01T${timeStart}:00`);
+            const end = new Date(`2000-01-01T${timeEnd}:00`);
+
+            if (end < start) {
+                return '-';
+            }
+
+            const diff = Math.floor((end - start) / 60000);
+            const hours = Math.floor(diff / 60);
+            const mins = diff % 60;
+
+            if (hours > 0) {
+                return `${hours}j ${mins}m`;
+            }
+            return `${mins}m`;
+        }
+
+        function populateReportTable(data) {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+
+            let rowNumber = 1;
+            data.entries.forEach(entry => {
+                const duration = calculateDuration(entry.timeStart, entry.timeEnd);
+                const statusBadge = entry.status === 'Done' ? '✅ Done' :
+                    entry.status === 'Pending' ? '⏳ Pending' : '❌ Cancel';
+
+                const photoBefore = entry.photoBefore === 'Ada' ? '📷 Ada' : '-';
+                const photoAfter = entry.photoAfter === 'Ada' ? '📷 Ada' : '-';
+
+                const row = `
+                    <tr>
+                        <td class="text-center">${rowNumber}</td>
+                        <td>${entry.task}</td>
+                        <td class="text-center">${entry.timeStart}</td>
+                        <td class="text-center">${entry.timeEnd}</td>
+                        <td class="text-center">${duration}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">${photoBefore}</td>
+                        <td class="text-center">${photoAfter}</td>
+                        <td class="text-center"></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+                rowNumber++;
+            });
+        }
+
+        function generateReport(type) {
+            closeReportModal();
+
+            const data = collectData();
+            if (!data) return;
+
+            data.transId = currentTransId;
+
+            updatePreview();
+
+            document.getElementById('reportTransId').textContent = `ID: ${currentTransId}`;
+            document.getElementById('docTransId').textContent = currentTransId;
+
+            const now = new Date();
+            const printTime = now.toLocaleString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            document.getElementById('printDateTime').textContent = printTime;
+
+            document.getElementById('formSection').style.display = 'none';
+            document.getElementById('reportSection').style.display = 'block';
+
+            if (type === 'pdf') {
+                convertPDF(data);
+            } else {
+                window.print();
+            }
+
+            setTimeout(() => {
+                document.getElementById('formSection').style.display = 'block';
+                document.getElementById('reportSection').style.display = 'none';
+            }, 1000);
+        }
+
+        // --- DATA COLLECTION ---
+
+        function collectData(validate = true) {
+            const outlet = document.getElementById('outlet').value;
+            const petugas = document.getElementById('petugas').value;
+            const picToko = document.getElementById('picToko').value;
+
+            if (!outlet || !petugas) {
+                alert("Outlet dan Nama Petugas wajib diisi!");
+                return null;
+            }
+
+            const blocks = document.querySelectorAll('.category-block');
+            let entries = [];
+
+            blocks.forEach(block => {
+                const select = block.querySelector('.cat-select');
+                const category = select.value;
+                if (!category) return;
+
+                const categoryName = select.options[select.selectedIndex].text;
+                const taskBlocks = block.querySelectorAll('.task-block');
+
+                taskBlocks.forEach(taskBlock => {
+                    const task = taskBlock.querySelector('.task-input').value;
+                    const status = taskBlock.querySelector('.status-select').value;
+
+                    if (validate && !task) {
+                        alert("Isi Task pada salah satu kategori!");
+                        throw new Error("Task kosong");
+                    }
+
+                    let entry = {
+                        category: categoryName,
+                        task: task,
+                        status: status
+                    };
+
+                    const timeBefore = taskBlock.querySelector('.time-before');
+                    const timeAfter = taskBlock.querySelector('.time-after');
+                    const timeCheck = taskBlock.querySelector('.time-check');
+
+                    if (category === '1' || category === '2') {
+                        entry.timeStart = timeBefore ? timeBefore.value : '-';
+                        entry.timeEnd = timeAfter ? timeAfter.value : '-';
+                        entry.photoBefore = taskBlock.querySelector('.photo-before').files.length > 0 ? 'Ada' : '-';
+                        entry.photoAfter = taskBlock.querySelector('.photo-after').files.length > 0 ? 'Ada' : '-';
+
+                        // Get base64 for upload
+                        const beforeFile = taskBlock.querySelector('.photo-before').files[0];
+                        const afterFile = taskBlock.querySelector('.photo-after').files[0];
+                        if (beforeFile) {
+                            entry.photoBeforeBase64 = getFileBase64(beforeFile);
+                        }
+                        if (afterFile) {
+                            entry.photoAfterBase64 = getFileBase64(afterFile);
+                        }
+                    } else if (category === '3') {
+                        entry.timeStart = timeCheck ? timeCheck.value : '-';
+                        entry.timeEnd = '-';
+                        entry.photoCheck = taskBlock.querySelector('.photo-check').files.length > 0 ? 'Ada' : '-';
+
+                        const checkFile = taskBlock.querySelector('.photo-check').files[0];
+                        if (checkFile) {
+                            entry.photoCheckBase64 = getFileBase64(checkFile);
+                        }
+                    }
+
+                    entries.push(entry);
+                });
+            });
+
+            if (validate && entries.length === 0) {
+                alert("Pilih minimal satu kategori dan isi task!");
+                return null;
+            }
+
+            return {
+                outlet,
+                petugas,
+                picToko,
+                entries,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function getFileBase64(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function showToast(message, type) {
+            const toast = document.getElementById('loadingToast');
+            const text = document.getElementById('loadingText');
+
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg z-50 text-white ${type === 'success' ? 'bg-green-600' :
+                    type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+                }`;
+            text.textContent = message;
+            toast.classList.remove('hidden');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function resetForm() {
+            if (confirm("Apakah Anda yakin ingin mereset formulir?")) {
+                document.getElementById('mainForm').reset();
+                document.getElementById('categoriesContainer').innerHTML = '';
+                categoryCount = 0;
+                taskCount = 0;
+                document.getElementById('formTitle').textContent = 'Input Data Maintenance';
+                document.getElementById('petugas').disabled = false;
+                addCategoryBlock();
+                updatePreview();
+
+                isSaved = false;
+                isEditMode = false;
+                currentTransId = null;
+                document.getElementById('saveStatus').classList.add('hidden');
+                document.getElementById('generateBtn').classList.add('disabled-btn');
+                localStorage.removeItem('currentFormData');
+            }
+        }
+
+        function convertPDF(data) {
+            const element = document.getElementById('reportSection');
+            const now = new Date();
+            const filename = `Laporan_${data.outlet.replace(/\|/g, '_')}_${now.toISOString().slice(0, 19).replace(/:/g, "-")}.pdf`;
+
+            const opt = {
+                margin: 0.5,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+
+</html>
