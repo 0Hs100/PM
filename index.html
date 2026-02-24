@@ -40,7 +40,7 @@
         .report-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .report-table th,
@@ -48,6 +48,7 @@
             border: 1px solid #000;
             padding: 4px 3px;
             text-align: left;
+            vertical-align: middle;
         }
 
         .report-table th {
@@ -75,6 +76,14 @@
 
         .photo-container {
             min-height: 90px;
+        }
+
+        /* Photo dalam tabel report */
+        .report-photo {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border: 1px solid #000;
         }
 
         .loading-spinner {
@@ -223,13 +232,13 @@
                 <thead>
                     <tr>
                         <th style="width: 4%;">No</th>
-                        <th style="width: 22%;">Task</th>
+                        <th style="width: 20%;">Task</th>
                         <th style="width: 8%;">Time Start</th>
                         <th style="width: 8%;">Time End</th>
                         <th style="width: 7%;">Durasi</th>
                         <th style="width: 8%;">Status</th>
-                        <th style="width: 10%;">Foto Sebelum</th>
-                        <th style="width: 10%;">Foto Sesudah</th>
+                        <th style="width: 12%;">Foto Sebelum</th>
+                        <th style="width: 12%;">Foto Sesudah</th>
                         <th style="width: 10%;">Paraf</th>
                     </tr>
                 </thead>
@@ -368,7 +377,7 @@
 
     <script>
         // KONFIGURASI
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOsd_FGMCfH2gMvLa5OyCPymkHxG3dGp_vU_NEnMbIXICm5BDv5M4bvwpRMp2Z-RMjvA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxETZo41X56_mBS63o1pXZ8JeSXxyUMBkF3fzkdgCveqxZAweXaFNrjNZSGgRRmrp3-yw/exec';
         const MAX_DRAFTS = 3;
         const MAX_HISTORY = 10;
 
@@ -649,18 +658,12 @@
             }
             data.transId = currentTransId;
 
-            console.log('Sending data:', JSON.stringify(data));
-
             fetch(SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(data)
             })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(result => {
-                    console.log('Result:', result);
                     if (result.result === 'success') {
                         isSaved = true;
                         document.getElementById('saveStatus').classList.remove('hidden');
@@ -735,25 +738,10 @@
                         entry.timeEnd = timeAfter ? timeAfter.value : '-';
                         entry.photoBefore = taskBlock.querySelector('.photo-before').files.length > 0 ? 'Ada' : '-';
                         entry.photoAfter = taskBlock.querySelector('.photo-after').files.length > 0 ? 'Ada' : '-';
-
-                        // Get base64 for upload (async)
-                        const beforeFile = taskBlock.querySelector('.photo-before').files[0];
-                        const afterFile = taskBlock.querySelector('.photo-after').files[0];
-                        if (beforeFile) {
-                            entry.photoBeforeBase64 = await getFileBase64(beforeFile);
-                        }
-                        if (afterFile) {
-                            entry.photoAfterBase64 = await getFileBase64(afterFile);
-                        }
                     } else if (category === '3') {
                         entry.timeStart = timeCheck ? timeCheck.value : '-';
                         entry.timeEnd = '-';
                         entry.photoCheck = taskBlock.querySelector('.photo-check').files.length > 0 ? 'Ada' : '-';
-
-                        const checkFile = taskBlock.querySelector('.photo-check').files[0];
-                        if (checkFile) {
-                            entry.photoCheckBase64 = await getFileBase64(checkFile);
-                        }
                     }
 
                     entries.push(entry);
@@ -774,17 +762,7 @@
             };
         }
 
-        function getFileBase64(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = () => resolve(null);
-                reader.readAsDataURL(file);
-            });
-        }
-
         // --- DRAFT QUEUE MANAGEMENT ---
-        // [Kode draft queue sama seperti sebelumnya - tidak diubah]
 
         function getDraftQueue() {
             const drafts = localStorage.getItem('maintenanceDrafts');
@@ -993,7 +971,6 @@
         }
 
         // --- REPORT HISTORY MANAGEMENT ---
-        // [Kode history sama seperti sebelumnya - tidak diubah untuk hemat ruang]
 
         function loadReportHistory() {
             const history = localStorage.getItem('maintenanceHistory');
@@ -1253,8 +1230,21 @@
                 const statusBadge = entry.status === 'Done' ? '✅ Done' :
                     entry.status === 'Pending' ? '⏳ Pending' : '❌ Cancel';
 
-                const photoBefore = entry.photoBefore === 'Ada' ? '📷 Ada' : '-';
-                const photoAfter = entry.photoAfter === 'Ada' ? '📷 Ada' : '-';
+                // Get photo images from DOM for PDF/Print
+                const taskBlocks = document.querySelectorAll('.task-block');
+                let photoBeforeImg = '-';
+                let photoAfterImg = '-';
+
+                // Find matching task block (simplified - assumes order matches)
+                if (rowNumber <= taskBlocks.length) {
+                    const taskBlock = taskBlocks[rowNumber - 1];
+                    if (taskBlock) {
+                        const beforeImg = taskBlock.querySelector('.photo-before')?.parentElement?.querySelector('.photo-preview');
+                        const afterImg = taskBlock.querySelector('.photo-after')?.parentElement?.querySelector('.photo-preview');
+                        photoBeforeImg = beforeImg ? `<img src="${beforeImg.src}" class="report-photo">` : '-';
+                        photoAfterImg = afterImg ? `<img src="${afterImg.src}" class="report-photo">` : '-';
+                    }
+                }
 
                 const row = `
                     <tr>
@@ -1264,8 +1254,8 @@
                         <td class="text-center">${entry.timeEnd}</td>
                         <td class="text-center">${duration}</td>
                         <td class="text-center">${statusBadge}</td>
-                        <td class="text-center">${photoBefore}</td>
-                        <td class="text-center">${photoAfter}</td>
+                        <td class="text-center">${photoBeforeImg}</td>
+                        <td class="text-center">${photoAfterImg}</td>
                         <td class="text-center"></td>
                     </tr>
                 `;
@@ -1384,7 +1374,7 @@
             const text = document.getElementById('loadingText');
 
             toast.className = `fixed top-4 right-4 px-6 py-3 rounded shadow-lg z-50 text-white ${type === 'success' ? 'bg-green-600' :
-                type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+                    type === 'error' ? 'bg-red-600' : 'bg-blue-600'
                 }`;
             text.textContent = message;
             toast.classList.remove('hidden');
